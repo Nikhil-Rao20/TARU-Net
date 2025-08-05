@@ -8,7 +8,9 @@
 ![Medical AI](https://img.shields.io/badge/Medical%20AI-Lung%20Analysis-red?style=for-the-badge)
 
 **Advancing Medical Imaging with AI-Powered 3D Lung Analysis**
+
 *Nikhileswara Rao Sulake, Partha Acharya, Subhamoy Mandal*
+
 *Developed at School of Medical Science and Technology, Indian Institute of Technology, Kharagpur, India*
 
 </div>
