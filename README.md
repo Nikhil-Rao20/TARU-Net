@@ -8,8 +8,8 @@
 ![Medical AI](https://img.shields.io/badge/Medical%20AI-Lung%20Analysis-red?style=for-the-badge)
 
 **Advancing Medical Imaging with AI-Powered 3D Lung Analysis**
-
-*Developed at Indian Institute of Technology Kharagpur*
+*Nikhileswara Rao Sulake, Partha Acharya, Subhamoy Mandal*
+*Developed at School of Medical Science and Technology, Indian Institute of Technology, Kharagpur, India*
 
 </div>
 
@@ -224,9 +224,8 @@ To assess the effectiveness of our model, we evaluated its performance across tr
 
 This work was conducted as part of an internship at IIT Kharagpur, under the guidance of:
 
-*   **Subhamoy Mandal Sir**
-*   **Partha Acharya** (IIT KGP PhD)
-*   **Suman Chakraborty Sir** (IIT KGP Director)
+*   **Dr. Subhamoy Mandal**
+*   **Mr. Partha Acharya** 
 
 ### Citation
 
