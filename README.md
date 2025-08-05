@@ -21,7 +21,76 @@ This repository presents a groundbreaking approach to medical image analysis tha
 
 The work addresses critical challenges in medical imaging including variability in CT image quality, difficulties in handling pathological cases, limited annotated datasets, high computational demands, and the absence of standardized AI models. By leveraging U-Net's encoder-decoder architecture for precise segmentation and combining it with surface topology-based reconstruction algorithms, we achieve unprecedented accuracy in identifying lung structures and pathologies.
 
+![COVID-19 CT Visualization](assets/covid-input-data.png)
+
+**Fig. 1:** These are Lung CT data in the COVID-19 Pneumonia dataset.  
+- The **first** image (left) is the **raw CT scan** of the patient  
+- The **middle** image shows the **lung region** extracted from the raw scan  
+- The **third** image displays the **pneumonia-affected regions**
+
+
 Our methodology represents a significant advancement in automated lung analysis, enhancing diagnostic accuracy and clinical decision-making through high-quality 3D reconstructions. The integration of deep learning with topology-driven reconstruction provides a robust foundation for improved medical imaging applications, supporting precise disease assessment and facilitating applications in detection, surgical planning, education, and computational medicine.
+
+![Cancer CT Visualization](assets/cancer-input-data.png)
+
+**Fig. 2:** These are Lung CT data in the Lung Cancer (Medical Decathlon) dataset.  
+- The **first** image (left) is the **raw CT scan** of the patient  
+- The **middle** image shows the **lung region** extracted from the raw scan  
+- The **third** image displays the **lung-cancer-affected regions**
+---
+
+### 🧮 Mathematical Intuition Behind Reconstruction
+
+---
+
+#### 🔷 Radial Basis Function (RBF) Interpolation
+
+Radial Basis Function (RBF) is a powerful interpolation method used for smooth surface reconstruction from scattered data points. It defines an implicit function that approximates the 3D surface based on control points.
+
+The RBF depends on the distance between a surface point `x` and a control center `c`: r = ||x - c||
+
+The general form of the RBF interpolant is given by: f(x) = K(x, y)a + P(x)b
+
+
+Where:
+
+- `K(x, y)`: Matrix of RBFs with centers at `y` evaluated at `x`  
+- `P(x)`: Polynomial basis (monomials) evaluated at `x`  
+- `a`, `b`: Coefficients found by solving:
+
+(K(y, y) + λI)a + P(y)b = d
+
+P(y)^T a = 0
+
+Here:
+
+- `d`: Data values at known locations `y`  
+- `λ`: Smoothing parameter (controls surface fitting rigidity)
+
+A well-chosen shape parameter influences the width of the RBF — smaller values result in broader basis functions, which smooth the surface more globally.
+
+---
+
+#### 🔷 Ball Pivot Algorithm (BPA)
+
+The Ball Pivot Algorithm is a lightweight yet effective surface reconstruction algorithm that generates a mesh from a point cloud or STL data. It simulates a ball of radius `r` pivoting across the surface points.
+
+**Steps:**
+
+1. **Seed Triangle Formation:**  
+   The ball "rolls" over the point cloud until it gets caught between three surface points, forming a triangle where no other point lies inside the ball. This triangle is the seed.
+
+2. **Triangle Expansion:**  
+   The ball pivots around edges of the existing triangle to find new points that can form additional valid triangles. It continues this process, expanding the mesh surface.
+
+3. **Repeat:**  
+   Once expansion halts, the algorithm finds a new seed triangle and repeats until the surface is complete.
+
+This method ensures watertight and accurate reconstruction while maintaining computational efficiency.
+
+
+---
+
 
 
 ### Key Features:
@@ -102,14 +171,54 @@ Multi-Disease-Lung-Segmentation-and-Reconstruction/
 
 ---
 
-## 📊 Results and Visualizations
+### 📚 Dataset Summary
 
-Our experimental results on 20 CT volumes demonstrate that the hybrid approach preserves fine anatomical details and enables intuitive visualization of disease progression. The U-Net model achieved Dice scores of 0.8837 for cancer and 0.6168 for pneumonia segmentation on 2D data.
+The following table shows the number of images used for training, validation, and testing for both Lung Cancer and COVID-19 segmentation:
 
-### Sample Visualizations:
+| Dataset Split | Lung Cancer | COVID-19 |
+|---------------|-------------|----------|
+| Train         | 53,409      | 16,985   |
+| Validation    | 12,326      | 3,920    |
+| Test          | 16,434      | 5,226    |
+| **Total**     | **82,169**  | **26,131** |
+
+
+#### 🔍 3D CT Scan Orientation Views
+
+![3D Axial Coronal Sagittal Views](assets/three-axis-image.png)
+
+**Fig. 3:** Axial, Coronal, and Sagittal are the three primary views for analyzing any 3D medical volume.  
+- The **first** image shows the **axial slice** (Z=60)  
+- The **second** is the **coronal slice** (Y=170)  
+- The **third** is the **sagittal slice** (X=384)  
+- The **last** shows the 3D volume with overlaid slice planes and directional axes.
 
 
 ---
+
+## 📊 Results and Visualizations
+
+To assess the effectiveness of our model, we evaluated its performance across training, validation, and testing datasets. The metrics include Dice Score, Intersection-over-Union (IoU), Accuracy, and Loss. The results, presented in the table below, demonstrate a consistent improvement in segmentation performance through all phases, especially highlighted by a high Dice score and low testing loss. These findings validate the robustness of our approach.
+
+| Dice Scores         | **Training**                              | **Validation**                     | **Testing**                          |
+| -------------- | ----------------------------------------- | ---------------------------------- | ------------------------------------ |
+| **Lung Cancer** | 0.5977 | 0.8769 | 0.8837 |
+| **Lung Pneumonia**        | 0.6294   | 0.6252   | 0.6168   |
+
+
+#### 🎯 Prediction vs Ground Truth - Pneumonia (3D)
+
+![3D Prediction vs Ground Truth - Pneumonia](assets/covid-prediction.png)
+
+**Fig. 4:** 3D Predictions compared with Ground Truth from the RBF Algorithm for Lung Pneumonia.  
+
+#### 🎯 Prediction vs Ground Truth - Cancer (3D)
+
+![3D Prediction vs Ground Truth - Cancer](assets/cancer-prediction.png)
+
+**Fig. 5:** 3D Predictions compared with Ground Truth from the RBF Algorithm for Lung Cancer. 
+
+
 
 ## 🎓 Academic Contributions
 
