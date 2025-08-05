@@ -26,4 +26,4 @@ plotly==5.22.0               # For interactive 3D plotting
 
 # --- Utilities ---
 tqdm==4.66.4                 # For smart progress bars in loops
-kagglehub==0.2.5             # For downloading datasets from Kaggle
+kagglehub==0.2.5             # For downloading datasets From Kaggle website
