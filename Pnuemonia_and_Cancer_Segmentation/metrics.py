@@ -4,17 +4,14 @@ import numpy as np
 def Dice(preds, targets, smooth=1e-6, threshold=None):
     if preds.shape != targets.shape:
         raise ValueError("Predictions and targets must have the same shape.")
-    # Apply thresholding for binary or multi-class case
     if threshold is not None:
         preds = (preds > threshold).float()
-    # Flatten tensors except for batch and channel dimensions
     preds = preds.flatten(2)  # (B, C, H*W)
     targets = targets.flatten(2)
     intersection = (preds * targets).sum(dim=-1)
     union = preds.sum(dim=-1) + targets.sum(dim=-1)
     dice = (2.0 * intersection + smooth) / (union + smooth)
     return dice.mean()
-
 
 
 def dice_score(preds, targets, threshold=0.5, smooth=1e-6):

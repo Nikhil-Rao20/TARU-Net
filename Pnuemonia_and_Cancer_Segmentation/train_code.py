@@ -1,197 +1,217 @@
+# -*- coding: utf-8 -*-
+"""
+Reusable PyTorch Training Pipeline for Semantic Segmentation.
+
+This module provides a robust, configurable Trainer class for training and
+validating binary segmentation models. It handles metric tracking, logging,
+and model checkpointing.
+"""
+
+# =============================================================================
+# 1. IMPORTS
+# =============================================================================
+
+import logging
 import os
-from torch import nn
-import torch.optim as optim
-import torch
 import time
-import pandas as pd
-from metrics import dice_score, precision, recall, specificity, f1_score, rmse, binary_iou, binary_dice, binary_f1
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional, Tuple
+
 import numpy as np
+import pandas as pd
+import torch
+from torch import nn, optim
+from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
+# Note: Assumes a local 'metrics.py' file with these functions.
+from metrics import binary_dice, binary_f1, binary_iou, recall, specificity, precision
 
-def cancer_seg_train_model(model, train_loader, val_loader, device, name, num_epochs=50):
-    save_dir = name
-    os.makedirs(save_dir, exist_ok=True)
+# =============================================================================
+# 2. INITIAL CONFIGURATION
+# =============================================================================
 
-    # Losses
-    bce_loss = nn.BCEWithLogitsLoss()
-    mse_loss = nn.MSELoss()
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+)
 
-    # Optimizer
-    optimizer = optim.Adam(model.parameters(), lr=1e-4)
 
-    
-    # Log DataFrame with custom column order
-    columns = [
-        'Epoch', 'Total Loss', 'Dice Score', 'Time (s)',
-        'Precision', 'Recall', 'F1 Score', 'Specificity', 
-        'Val Total Loss',  'Val Dice Score',  'Val Time (s)', 
-        'Val Precision', 'Val Recall', 'Val F1 Score', 'Val Specificity',
+# =============================================================================
+# 3. CONFIGURATION AND METRIC HANDLING
+# =============================================================================
 
-    ]
-    log_df = pd.DataFrame(columns=columns)
+@dataclass
+class TrainConfig:
+    """Configuration settings for the model training process."""
+    experiment_name: str = "default_experiment"
+    device: str = "cuda" if torch.cuda.is_available() else "cpu"
+    output_dir: str = "training_results"
+    num_epochs: int = 50
+    learning_rate: float = 1e-4
+    save_best_model: bool = True
+    best_metric_to_track: str = "val_loss"  # or 'val_dice'
 
-    best_val_loss = float('inf')
 
-    for epoch in range(num_epochs):
-        metrics = {col: 0.0 for col in columns}  # Initialize metrics dict
+class EpochMetrics:
+    """A helper class to track and aggregate metrics for one epoch."""
+    def __init__(self):
+        self.metrics: Dict[str, List[float]] = {}
 
-        for phase in ['train', 'val']:
-            dataloader = train_loader if phase == 'train' else val_loader
-            model.train() if phase == 'train' else model.eval()
+    def update(self, new_metrics: Dict[str, float]):
+        for key, value in new_metrics.items():
+            if key not in self.metrics:
+                self.metrics[key] = []
+            self.metrics[key].append(value)
 
-            batch_metrics = {
-                'total_loss': [],
-                'dice': [], 'precision': [], 'recall': [], 'specificity': [],
-                
-            }
+    def get_averages(self) -> Dict[str, float]:
+        return {key: np.nanmean(val) for key, val in self.metrics.items() if val}
 
+
+# =============================================================================
+# 4. MODEL TRAINER CLASS
+# =============================================================================
+
+class Trainer:
+    """A class to handle the training and validation of a segmentation model."""
+
+    def __init__(
+        self,
+        model: nn.Module,
+        train_loader: DataLoader,
+        val_loader: DataLoader,
+        config: TrainConfig,
+    ):
+        """
+        Initializes the Trainer.
+
+        Args:
+            model (nn.Module): The PyTorch model to train.
+            train_loader (DataLoader): DataLoader for the training set.
+            val_loader (DataLoader): DataLoader for the validation set.
+            config (TrainConfig): Configuration object for the training run.
+        """
+        self.model = model.to(config.device)
+        self.train_loader = train_loader
+        self.val_loader = val_loader
+        self.config = config
+
+        self.criterion = nn.BCEWithLogitsLoss()
+        self.optimizer = optim.Adam(model.parameters(), lr=config.learning_rate)
+
+        self.experiment_path = os.path.join(config.output_dir, config.experiment_name)
+        os.makedirs(self.experiment_path, exist_ok=True)
+        logging.info(f"Trainer initialized for experiment: '{config.experiment_name}'")
+
+    def train(self) -> pd.DataFrame:
+        """
+        Runs the full training and validation loop for the specified number of epochs.
+
+        Returns:
+            pd.DataFrame: A DataFrame containing the training history.
+        """
+        history = []
+        best_metric_value = float('inf') if "loss" in self.config.best_metric_to_track else -float('inf')
+
+        for epoch in range(self.config.num_epochs):
             start_time = time.time()
 
-            with torch.set_grad_enabled(phase == 'train'):
-                for noisy_img, mask in tqdm(dataloader, desc=f"{phase.capitalize()} Epoch {epoch+1}", leave=False):
-                    noisy_img = noisy_img.to(device)
-                    mask = mask.to(device)
+            # --- Training Phase ---
+            train_metrics = self._run_one_epoch(phase="train", epoch_num=epoch)
+            # --- Validation Phase ---
+            val_metrics = self._run_one_epoch(phase="val", epoch_num=epoch)
 
-                    seg_mask_logits = model(noisy_img)
+            epoch_duration = time.time() - start_time
 
-                    # Losses
-                    loss_seg = bce_loss(seg_mask_logits, mask)
-                    total_loss = loss_seg
+            # --- Logging and Checkpointing ---
+            epoch_summary = {**train_metrics, **val_metrics, "time_s": epoch_duration}
+            history.append(epoch_summary)
+            self._log_epoch_summary(epoch + 1, epoch_summary)
 
-                    if phase == 'train':
-                        optimizer.zero_grad()
-                        total_loss.backward()
-                        optimizer.step()
+            current_metric = epoch_summary.get(self.config.best_metric_to_track)
+            if self.config.save_best_model and self._is_better(current_metric, best_metric_value):
+                best_metric_value = current_metric
+                self._save_checkpoint("best_model.pth")
+                logging.info(f"✅ New best model saved with {self.config.best_metric_to_track}: {best_metric_value:.4f}")
 
-                    # Segmentation metrics
-                    seg_probs = torch.sigmoid(seg_mask_logits)
-                    dice = dice_score(seg_probs, mask).item()
-                    prec = precision(seg_probs, mask).item()
-                    rec = recall(seg_probs, mask).item()
-                    spec = specificity(seg_probs, mask).item()
-                    f1 = f1_score(prec, rec)
+        self._save_checkpoint("final_model.pth")
+        history_df = pd.DataFrame(history)
+        self._save_history(history_df)
+        return history_df
 
-                    # Append batch metrics
-                    batch_metrics['total_loss'].append(total_loss.item())
-                    batch_metrics['dice'].append(dice)
-                    batch_metrics['precision'].append(prec)
-                    batch_metrics['recall'].append(rec)
-                    batch_metrics['specificity'].append(spec)
-                  
+    def _run_one_epoch(self, phase: str, epoch_num: int) -> Dict[str, float]:
+        """Runs a single epoch of training or validation."""
+        is_train = phase == "train"
+        self.model.train(is_train)
+        dataloader = self.train_loader if is_train else self.val_loader
+        epoch_metrics = EpochMetrics()
 
-            # Aggregate metrics
-            end_time = time.time()
-            avg = {k: np.mean(v) for k, v in batch_metrics.items()}
-            time_taken = end_time - start_time
+        pbar_desc = f"Epoch {epoch_num + 1}/{self.config.num_epochs} [{phase.capitalize()}]"
+        with torch.set_grad_enabled(is_train):
+            for images, masks in tqdm(dataloader, desc=pbar_desc, leave=False):
+                batch_metrics = self._run_one_batch(images, masks, is_train)
+                epoch_metrics.update(batch_metrics)
 
-            # Update metrics dict
-            prefix = '' if phase == 'train' else 'Val '
-            metrics[f'{prefix}Total Loss'] = avg['total_loss']
-            metrics[f'{prefix}Dice Score'] = avg['dice']
-            metrics[f'{prefix}Time (s)'] = time_taken
-            metrics[f'{prefix}Precision'] = avg['precision']
-            metrics[f'{prefix}Recall'] = avg['recall']
-            metrics[f'{prefix}F1 Score'] = f1_score(avg['precision'], avg['recall'])
-            metrics[f'{prefix}Specificity'] = avg['specificity']
-      
+        # Prefix metrics with 'train_' or 'val_'
+        avg_metrics = epoch_metrics.get_averages()
+        return {f"{phase}_{key}": val for key, val in avg_metrics.items()}
 
-        # Append to log
-        log_df = pd.concat([log_df, pd.DataFrame([metrics])], ignore_index=True)
+    def _run_one_batch(
+        self, images: torch.Tensor, masks: torch.Tensor, is_train: bool
+    ) -> Dict[str, float]:
+        """Processes a single batch of data."""
+        images = images.to(self.config.device)
+        masks = masks.to(self.config.device).float()
 
-        # Save best model
-        if metrics['Val Total Loss'] < best_val_loss:
-            best_val_loss = metrics['Val Total Loss']
-            best_model_path = os.path.join(save_dir, f'{name}_best_val_loss.pt')
-            torch.save(model.state_dict(), best_model_path)
+        if is_train:
+            self.optimizer.zero_grad()
 
-        # Print progress
-        print(f"Epoch {epoch+1}/{num_epochs} | "
-              f"Train Loss: {metrics['Total Loss']:.4f} | "
-              f"Train Dice: {metrics['Dice Score']:.4f} | "
-              f"Val Loss: {metrics['Val Total Loss']:.4f} | "
-              f"Val Dice: {metrics['Val Dice Score']:.4f} | "
-              )
+        logits = self.model(images)
+        loss = self.criterion(logits, masks)
 
-    # Save logs
-    log_path = os.path.join(save_dir, f'{name}_Training.csv')
-    log_df.to_csv(log_path, index=False, float_format='%.4f')
-    print(f"Training complete. Logs saved to {log_path}")
-
-    return model
-
-
-
-
-# --- Training function ---
-def covid_train_binary_segmentation(model, train_loader, val_loader, num_epochs, device, save_path):
-    criterion = nn.BCEWithLogitsLoss()
-    optimizer = optim.Adam(model.parameters(), lr=1e-4)
-    model.to(device)
-
-    best_val_dice = 0.0
-
-    for epoch in range(num_epochs):
-        model.train()
-        train_loss = 0.0
-        iou_scores, dice_scores, f1_scores = [], [], []
-
-        pbar = tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs} [Train]")
-        for images, masks in pbar:
-            images = images.to(device)
-            masks = masks.to(device).float()
-
-            optimizer.zero_grad()
-            outputs = model(images)
-            loss = criterion(outputs, masks)
+        if is_train:
             loss.backward()
-            optimizer.step()
+            self.optimizer.step()
 
-            train_loss += loss.item()
-            preds = (torch.sigmoid(outputs) > 0.5).bool()
+        # Calculate metrics
+        preds = (torch.sigmoid(logits) > 0.5).bool()
+        return {
+            "loss": loss.item(),
+            "dice": binary_dice(preds, masks.bool()).item(),
+            "iou": binary_iou(preds, masks.bool()).item(),
+            "f1": binary_f1(preds, masks.bool()).item(),
+            "precision": precision(preds, masks).item(),
+            "recall": recall(preds, masks).item(),
+            "specificity": specificity(preds, masks).item()
+        }
+    
+    def _is_better(self, current: float, best: float) -> bool:
+        """Checks if the current metric is better than the best one so far."""
+        if "loss" in self.config.best_metric_to_track:
+            return current < best  # For loss, lower is better
+        else:
+            return current > best  # For scores like Dice/IoU, higher is better
 
-            iou_scores.append(binary_iou(preds, masks.bool()))
-            dice_scores.append(binary_dice(preds, masks.bool()))
-            f1_scores.append(binary_f1(preds, masks.bool()))
+    def _save_checkpoint(self, filename: str):
+        """Saves the model state dictionary."""
+        path = os.path.join(self.experiment_path, filename)
+        torch.save(self.model.state_dict(), path)
 
-            pbar.set_postfix({
-                'Loss': f"{train_loss / (len(iou_scores)):.4f}",
-                'Dice': f"{np.nanmean(dice_scores):.4f}",
-                'IoU': f"{np.nanmean(iou_scores):.4f}",
-                'F1': f"{np.nanmean(f1_scores):.4f}"
-            }, refresh=True)
+    def _save_history(self, history_df: pd.DataFrame):
+        """Saves the training history to a CSV file."""
+        csv_path = os.path.join(self.experiment_path, "training_log.csv")
+        history_df.to_csv(csv_path, index_label="epoch")
+        logging.info(f"Full training history saved to: {csv_path}")
 
-        # ---- Validation ----
-        model.eval()
-        val_loss = 0.0
-        val_ious, val_dices, val_f1s = [], [], []
-
-        with torch.no_grad():
-            for images, masks in tqdm(val_loader, desc=f"Epoch {epoch+1}/{num_epochs} [Val]"):
-                images = images.to(device)
-                masks = masks.to(device).float()
-
-                outputs = model(images)
-                loss = criterion(outputs, masks)
-                val_loss += loss.item()
-
-                preds = (torch.sigmoid(outputs) > 0.5).bool()
-
-                val_ious.append(binary_iou(preds, masks.bool()))
-                val_dices.append(binary_dice(preds, masks.bool()))
-                val_f1s.append(binary_f1(preds, masks.bool()))
-
-        avg_val_dice = np.nanmean(val_dices)
-
-        print(f"\nEpoch {epoch+1} Summary:")
-        print(f"Train Loss: {train_loss / len(train_loader):.4f} | Val Loss: {val_loss / len(val_loader):.4f}")
-        print(f"Val IoU: {np.nanmean(val_ious):.4f} | Dice: {avg_val_dice:.4f} | F1: {np.nanmean(val_f1s):.4f}")
-
-        # Save best model
-        if avg_val_dice > best_val_dice:
-            best_val_dice = avg_val_dice
-            torch.save(model.state_dict(), f"{save_path}/best_model.pth")
-            print("✅ Best model saved!")
-
-    torch.save(model.state_dict(), f"{save_path}/final_model.pth")
-    print("✅ Final model saved.")
+    @staticmethod
+    def _log_epoch_summary(epoch_num: int, summary: Dict[str, float]):
+        """Prints a formatted summary of the epoch's results."""
+        log_str = (
+            f"Epoch {epoch_num:02d} | "
+            f"Train Loss: {summary.get('train_loss', 0):.4f}, "
+            f"Train Dice: {summary.get('train_dice', 0):.4f} | "
+            f"Val Loss: {summary.get('val_loss', 0):.4f}, "
+            f"Val Dice: {summary.get('val_dice', 0):.4f} | "
+            f"Time: {summary.get('time_s', 0):.2f}s"
+        )
+        logging.info(log_str)

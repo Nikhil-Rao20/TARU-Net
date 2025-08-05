@@ -1,0 +1,29 @@
+# =============================================================================
+# Python Package Requirements for Medical Segmentation Project
+#
+# To create a reproducible environment, install these exact versions with:
+# pip install -r requirements.txt
+# =============================================================================
+
+# --- Core Deep Learning & Scientific Computing ---
+# Pinned to recent, stable versions for reproducibility.
+torch==2.4.0
+numpy==1.26.4
+scipy==1.13.1
+pandas==2.2.2
+scikit-learn==1.5.0
+
+# --- 3D, Image, and Medical Data Processing ---
+open3d==0.18.0              # For 3D point cloud and mesh processing
+nibabel==5.2.1               # For reading/writing NIfTI medical image files
+scikit-image==0.23.2         # For image algorithms like marching cubes
+opencv-python==4.10.0.84     # For core computer vision operations (cv2)
+numpy-stl==3.2.1             # For handling .stl 3D mesh files
+
+# --- Data Visualization ---
+matplotlib==3.9.0
+plotly==5.22.0               # For interactive 3D plotting
+
+# --- Utilities ---
+tqdm==4.66.4                 # For smart progress bars in loops
+kagglehub==0.2.5             # For downloading datasets from Kaggle
