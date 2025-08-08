@@ -184,6 +184,20 @@ The following table shows the number of images used for training, validation, an
 | Test          | 16,434      | 5,226    |
 | **Total**     | **82,169**  | **26,131** |
 
+### Comprehensive Dataset Information Comparison
+The table below compares two widely used medical imaging datasets, highlighting their objectives, pathologies, sources, and key technical characteristics for lung-related segmentation tasks.
+
+
+| **Characteristic** | **COVID-19 Lesion Segmentation (Maftouni et al., curated)** | **Medical Decathlon: Task06_Lung** |
+|--------------------|-------------------------------------------------------------|-------------------------------------|
+| **Primary Objective** | Segmentation of COVID-19 related pulmonary lesions (pneumonia) | Segmentation of primary lung cancer tumors |
+| **Pathology** | COVID-19 Pneumonia (often diffuse, bilateral, ground-glass opacities, consolidations) | Non-Small Cell Lung Cancer (NSCLC) (typically focal, solid or sub-solid nodules/masses) |
+| **Data Source** | Curated from 3 public datasets (MosMedData, Zenodo, etc.) | The Cancer Imaging Archive (TCIA) |
+| **Imaging Modality** | Computed Tomography (CT) | Computed Tomography (CT) |
+| **Annotations** | Pixel-wise ground truth segmentation masks of COVID-19 lesions | Pixel-wise ground truth segmentation masks of lung tumors |
+| **Image Resolution** | Variable, typically 512×512 or similar (per slice) | Variable; median volume size (512, 512, 252) voxels |
+
+
 
 #### 🔍 3D CT Scan Orientation Views
 
