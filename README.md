@@ -9,7 +9,7 @@
 
 **Advancing Medical Imaging with AI-Powered 3D Lung Analysis**
 
-*Nikhileswara Rao Sulake, Partha Acharya, Subhamoy Mandal*
+*Nikhileswara Rao Sulake, Partha Acharya, Subhamoy Mandal, Suman Chakraborty*
 
 *Developed at School of Medical Science and Technology, Indian Institute of Technology, Kharagpur, India*
 
@@ -227,7 +227,8 @@ To assess the effectiveness of our model, we evaluated its performance across tr
 This work was conducted as part of an internship at IIT Kharagpur, under the guidance of:
 
 *   **Dr. Subhamoy Mandal**
-*   **Mr. Partha Acharya** 
+*   **Mr. Partha Acharya**
+*   **Dr. Suman Chakraborty**
 
 ### Citation
 
