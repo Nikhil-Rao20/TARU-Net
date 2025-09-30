@@ -222,12 +222,6 @@ The table below compares two widely used medical imaging datasets, highlighting 
 
 To assess the effectiveness of our model, we evaluated its performance across training, validation, and testing datasets. The metrics include Dice Score, Intersection-over-Union (IoU), Accuracy, and Loss. The results, presented in the table below, demonstrate a consistent improvement in segmentation performance through all phases, especially highlighted by a high Dice score and low testing loss. These findings validate the robustness of our approach.
 
-| Dice Scores         | **Training**                              | **Validation**                     | **Testing**                          |
-| -------------- | ----------------------------------------- | ---------------------------------- | ------------------------------------ |
-| **Lung Cancer** | 0.5977 | 0.8769 | 0.8837 |
-| **Lung Pneumonia**        | 0.6294   | 0.6252   | 0.6168   |
-
-
 #### 🎯 Prediction vs Ground Truth - Pneumonia (3D)
 
 ![3D Prediction vs Ground Truth - Pneumonia](assets/covid-prediction.png)
