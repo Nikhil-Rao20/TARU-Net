@@ -1,4 +1,4 @@
-# Multi-Disease Lung Segmentation and Reconstruction
+# Deep Learning-Guided Lung Segmentation with Surface Topology-Based 3D Reconstruction for Enhanced Clinical Analysis
 
 <div align="center">
 
@@ -7,13 +7,19 @@
 ![3D Reconstruction](https://img.shields.io/badge/3D%20Reconstruction-Surface%20Topology-green?style=for-the-badge)
 ![Medical AI](https://img.shields.io/badge/Medical%20AI-Lung%20Analysis-red?style=for-the-badge)
 
-**Advancing Medical Imaging with AI-Powered 3D Lung Analysis**
-
-*Nikhileswara Rao Sulake, Partha Acharya, Subhamoy Mandal, Suman Chakraborty*
-
-*Developed at School of Medical Science and Technology, Indian Institute of Technology, Kharagpur, India*
+**Towards clinically reliable and automated 3D lung models for disease diagnosis and treatment planning**
 
 </div>
+
+---
+
+## 👨‍💻 Authors and Affiliations  
+
+**Partha Acharya<sup>1</sup>, Nikhileswara Rao Sulake<sup>2</sup>, Aishik Sen<sup>3</sup>, Amitabha Chattopadhyay<sup>4</sup>, Subhamoy Mandal<sup>1,\*</sup>, Suman Chakraborty<sup>5</sup>** 
+
+<sup>1</sup> SMST, IIT Kharagpur, India  <sup>2</sup> Dept. of CSE, RGUKT Nuzvid, India  <sup>3</sup> SCSE, VIT Chennai, India <sup>4</sup> Narayana Hospital, Howrah, India  <sup>5</sup> Dept. of Mechanical Engg., IIT Kharagpur, India  
+
+<sup>\*</sup> Corresponding Author  [📧Email📧](mailto:smandal@iitkgp.ac.in)  
 
 ---
 
@@ -236,13 +242,36 @@ To assess the effectiveness of our model, we evaluated its performance across tr
 
 
 
-## 🎓 Academic Contributions
+## 🎓 Academic Affiliations of Authors
 
-This work was conducted as part of an internship at IIT Kharagpur, under the guidance of:
+- **Partha Acharya**  
+  School of Medical Science and Technology,  
+  Indian Institute of Technology Kharagpur, Kharagpur, India  
+  📧 [partha.acharya@kgpian.iitkgp.ac.in](mailto:partha.acharya@kgpian.iitkgp.ac.in)  
 
-*   **Dr. Subhamoy Mandal**
-*   **Mr. Partha Acharya**
-*   **Dr. Suman Chakraborty**
+- **Nikhileswara Rao Sulake**  
+  Department of Computer Science and Engineering,  
+  Rajiv Gandhi University of Knowledge Technologies, Nuzvid, India  
+  📧 [nikhil01446@gmail.com](mailto:nikhil01446@gmail.com)  
+
+- **Aishik Sen**  
+  School of Computer Science and Engineering,  
+  Vellore Institute of Technology, Chennai, India  
+  📧 [senaishik101@gmail.com](mailto:senaishik101@gmail.com)  
+
+- **Amitabha Chattopadhyay**  
+  Narayana Hospital, Howrah, India  
+  📧 [amitabhachattopadhyay10@gmail.com](mailto:amitabhachattopadhyay10@gmail.com)  
+
+- **Subhamoy Mandal**  
+  School of Medical Science and Technology,  
+  Indian Institute of Technology Kharagpur, Kharagpur, India  
+  📧 [smandal@iitkgp.ac.in](mailto:smandal@iitkgp.ac.in)  
+
+- **Suman Chakraborty**  
+  Department of Mechanical Engineering,  
+  Indian Institute of Technology Kharagpur, Kharagpur, India  
+  📧 [suman@mech.iitkgp.ac.in](mailto:suman@mech.iitkgp.ac.in)  
 
 ### Citation
 
